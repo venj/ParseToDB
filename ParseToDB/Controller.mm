@@ -50,23 +50,28 @@ using namespace std;
 - (void)parseFile {
     __weak typeof(self)weakself = self;
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
+        
+        NSString *queryString = @"INSERT INTO torrents (name, magnet, link, genre, torrent, size, category_id, file_count, seeders, leechers, upload_date) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        NSInteger progress = 0;
+        
+        //FMDatabaseQueue *queue = [FMDatabaseQueue databaseQueueWithPath:aPath];
+        
+        FMDatabase *db = [FMDatabase databaseWithPath:@"/Volumes/ramdisk/data.db"];
+        
+        if (![db open]) {
+            NSLog(@"Failed to open database.");
+            return;
+        }
+        
         ifstream inf([[self.textURL filePathURL] fileSystemRepresentation]);
         if(!inf) { NSLog(@"Cannot open input file.\n"); }
         
         NSInteger total = 0;
         char str[3072];
         while(inf) { inf.getline(str, 3072); if(inf) { total++; } } inf.clear(); inf.seekg(0); // Count total lines.
-        NSString *queryString = @"INSERT INTO torrents (name, magnet, link, genre, torrent, size, category_id, file_count, seeders, leechers, upload_date) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        NSInteger progress = 0;
-        
-        FMDatabase *db = [FMDatabase databaseWithPath:@"/Users/venj/Desktop/data.db"];
-        if (![db open]) {
-            NSLog(@"Failed to open database.");
-            return;
-        }
         
         NSDateComponents *dcomp = [[NSDateComponents alloc] init];
-        dcomp.year = 2014; dcomp.month = 1, dcomp.day = 1;
+        dcomp.year = 2015; dcomp.month = 1, dcomp.day = 1;
         NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
         calendar.locale = [NSLocale localeWithLocaleIdentifier:@"en_GB"];
         NSDate *date2014 = [calendar dateFromComponents:dcomp];
@@ -87,7 +92,7 @@ using namespace std;
                     else {
                         BOOL result = [db executeUpdate:queryString withArgumentsInArray:
                                        @[parts[1], //name
-                                         [NSString stringWithFormat:@"magnet:?xt=urn:btih%@", parts[0]], //magnet
+                                         [NSString stringWithFormat:@"magnet:?xt=urn:btih:%@", parts[0]], //magnet
                                          parts[3], //link
                                          parts[2], //genre
                                          parts[4], //torrent
@@ -102,7 +107,7 @@ using namespace std;
                         if (!result) { NSLog(@"%@", line); }
                     }
                     dispatch_async(dispatch_get_main_queue(), ^{
-                        weakself.progressBar.doubleValue = progress / (total * 100.0);
+                        weakself.progressBar.doubleValue = progress * 100.0 / total;
                     });
                     progress++;
                 }
