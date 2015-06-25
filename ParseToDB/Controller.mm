@@ -51,7 +51,7 @@ using namespace std;
     __weak typeof(self)weakself = self;
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
         
-        NSString *queryString = @"INSERT INTO torrents (name, magnet, link, genre, torrent, size, category_id, file_count, seeders, leechers, upload_date) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        NSString *queryString = @"INSERT INTO torrents (name, magnet, link, genre, torrent, size, category_id, file_count, seeders, leechers, upload_date, verified) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         NSInteger progress = 0;
         
         //FMDatabaseQueue *queue = [FMDatabaseQueue databaseQueueWithPath:aPath];
@@ -84,7 +84,7 @@ using namespace std;
                 if(inf) {
                     NSString *line = [[NSString alloc] initWithCString:str encoding:NSUTF8StringEncoding];
                     NSArray *parts = [line componentsSeparatedByString:@"|"];
-                    NSTimeInterval ti = [[parts lastObject] integerValue];
+                    NSTimeInterval ti = [parts[10] integerValue];
                     NSDate *date = [NSDate dateWithTimeIntervalSince1970:ti];
                     if (ti2014 > ti) {
                         skipped++;
@@ -101,7 +101,8 @@ using namespace std;
                                          @([parts[7] integerValue]), //file_count
                                          @([parts[8] integerValue]), //seeders
                                          @([parts[9] integerValue]), //leechers
-                                         date //upload_date
+                                         date, //upload_date
+                                         @([parts[11] boolValue]), //verified
                                          ]];
                         
                         if (!result) { NSLog(@"%@", line); }
